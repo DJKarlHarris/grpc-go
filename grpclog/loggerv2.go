@@ -20,6 +20,7 @@ package grpclog
 
 import (
 	"io"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -58,6 +59,11 @@ func NewLoggerV2WithVerbosity(infoW, warningW, errorW io.Writer, v int) LoggerV2
 // newLoggerV2 creates a loggerV2 to be used as default logger.
 // All logs are written to stderr.
 func newLoggerV2() LoggerV2 {
+	file, err := os.OpenFile("app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatal("create log file fail", err)
+	}
+
 	errorW := io.Discard
 	warningW := io.Discard
 	infoW := io.Discard
@@ -65,11 +71,23 @@ func newLoggerV2() LoggerV2 {
 	logLevel := os.Getenv("GRPC_GO_LOG_SEVERITY_LEVEL")
 	switch logLevel {
 	case "", "ERROR", "error": // If env is unset, set level to ERROR.
-		errorW = os.Stderr
+		if file != nil {
+			errorW = file
+		} else {
+			errorW = os.Stderr
+		}
 	case "WARNING", "warning":
-		warningW = os.Stderr
+		if file != nil {
+			warningW = file
+		} else {
+			warningW = os.Stderr
+		}
 	case "INFO", "info":
-		infoW = os.Stderr
+		if file != nil {
+			infoW = file
+		} else {
+			infoW = os.Stderr
+		}
 	}
 
 	var v int
